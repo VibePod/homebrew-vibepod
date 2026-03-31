@@ -1,0 +1,56 @@
+name: Update Formula on PyPI Release
+
+on:
+  schedule:
+    # Check for new PyPI releases every 6 hours
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tap
+        uses: actions/checkout@v4
+
+      - name: Get latest PyPI version
+        id: pypi
+        run: |
+          LATEST=$(curl -s https://pypi.org/pypi/vibepod/json | jq -r '.info.version')
+          CURRENT=$(grep 'url "https://files.pythonhosted' Formula/vibepod.rb | grep -oP 'vibepod-\K[0-9.]+(?=\.tar)')
+          echo "latest=$LATEST" >> $GITHUB_OUTPUT
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "Latest: $LATEST | Current: $CURRENT"
+
+      - name: Update formula if version changed
+        if: steps.pypi.outputs.latest != steps.pypi.outputs.current
+        env:
+          NEW_VERSION: ${{ steps.pypi.outputs.latest }}
+        run: |
+          URL="https://files.pythonhosted.org/packages/source/v/vibepod/vibepod-${NEW_VERSION}.tar.gz"
+          SHA256=$(curl -sL "$URL" | shasum -a 256 | awk '{print $1}')
+
+          # Update version URL and sha256
+          sed -i "s|url \"https://files.pythonhosted.org/packages/source/v/vibepod/vibepod-.*\.tar\.gz\"|url \"${URL}\"|" Formula/vibepod.rb
+          sed -i "s|sha256 \".*\" # run:|sha256 \"${SHA256}\" # run:|" Formula/vibepod.rb
+
+          echo "Updated to $NEW_VERSION (sha256: $SHA256)"
+
+      - name: Open PR with update
+        if: steps.pypi.outputs.latest != steps.pypi.outputs.current
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "vibepod ${{ steps.pypi.outputs.latest }}"
+          title: "Update vibepod to ${{ steps.pypi.outputs.latest }}"
+          body: |
+            Auto-generated update from PyPI.
+
+            - **Version:** `${{ steps.pypi.outputs.current }}` → `${{ steps.pypi.outputs.latest }}`
+            - **PyPI:** https://pypi.org/project/vibepod/${{ steps.pypi.outputs.latest }}/
+
+            After merging, run locally to refresh dependency resources:
+            ```
+            brew update-python-resources Formula/vibepod.rb
+            ```
+          branch: "auto-update/vibepod-${{ steps.pypi.outputs.latest }}"
+          delete-branch: true
