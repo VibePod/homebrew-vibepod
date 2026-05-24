@@ -20,8 +20,9 @@ jobs:
       - name: Get latest PyPI version
         id: pypi
         run: |
-          LATEST=$(curl -s https://pypi.org/pypi/vibepod/json | jq -r '.info.version')
-          CURRENT=$(grep 'url "https://files.pythonhosted' Formula/vibepod.rb | grep -oP 'vibepod-\K[0-9.]+(?=\.tar)')
+          LATEST_JSON=$(curl -s https://pypi.org/pypi/vibepod/json)
+          LATEST=$(echo "$LATEST_JSON" | jq -r '.info.version')
+          CURRENT=$(grep -oP 'vibepod-\K[0-9.]+(?=\.tar\.gz)' Formula/vibepod.rb | head -1)
           echo "latest=$LATEST" >> $GITHUB_OUTPUT
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "Latest: $LATEST | Current: $CURRENT"
@@ -31,12 +32,19 @@ jobs:
         env:
           NEW_VERSION: ${{ steps.pypi.outputs.latest }}
         run: |
-          URL="https://files.pythonhosted.org/packages/source/v/vibepod/vibepod-${NEW_VERSION}.tar.gz"
+          # Get the actual sdist URL from the PyPI API (hash-based path, not /source/)
+          URL=$(curl -s https://pypi.org/pypi/vibepod/json | jq -r --arg ver "$NEW_VERSION" '.releases[$ver][] | select(.packagetype == "sdist") | .url')
           SHA256=$(curl -sL "$URL" | shasum -a 256 | awk '{print $1}')
 
-          # Update version URL and sha256
-          sed -i "s|url \"https://files.pythonhosted.org/packages/source/v/vibepod/vibepod-.*\.tar\.gz\"|url \"${URL}\"|" Formula/vibepod.rb
-          sed -i "s|sha256 \".*\" # run:|sha256 \"${SHA256}\" # run:|" Formula/vibepod.rb
+          # Update the main package URL (matches the hash-based pypi path)
+          sed -i "s|url \"https://files.pythonhosted.org/packages/.*/vibepod-.*\.tar\.gz\"|url \"${URL}\"|" Formula/vibepod.rb
+
+          # Update the sha256 on the line immediately following the main package url
+          awk -v sha="$SHA256" '
+            /url.*vibepod-[0-9]+\.[0-9]+/ { found=1 }
+            found && /^  sha256/ { sub(/"[^"]*"/, "\"" sha "\""); found=0 }
+            { print }
+          ' Formula/vibepod.rb > /tmp/vibepod_formula.rb && mv /tmp/vibepod_formula.rb Formula/vibepod.rb
 
           echo "Updated to $NEW_VERSION (sha256: $SHA256)"
 
