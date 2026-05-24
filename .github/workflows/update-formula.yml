@@ -6,12 +6,16 @@ on:
     - cron: "0 */6 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout tap
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Get latest PyPI version
         id: pypi
@@ -38,7 +42,7 @@ jobs:
 
       - name: Open PR with update
         if: steps.pypi.outputs.latest != steps.pypi.outputs.current
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "vibepod ${{ steps.pypi.outputs.latest }}"
           title: "Update vibepod to ${{ steps.pypi.outputs.latest }}"
