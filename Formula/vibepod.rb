@@ -3,8 +3,8 @@ class Vibepod < Formula
 
   desc "Run and switch AI coding agents locally"
   homepage "https://vibepod.dev"
-  url "https://files.pythonhosted.org/packages/f5/37/8d9e8fc54d0fec785ce87b859caffd746a8200e96fc837f80ef91526b976/vibepod-0.14.0.tar.gz"
-  sha256 "43e984d5376d6f31880b1b7047b5693246d582faa228a5944e2ae61e661db4f8"
+  url "https://files.pythonhosted.org/packages/3a/e7/6f3e05c361ca85e0c41b59da4629cdfe5225b38856cfe5574bff9dff1319/vibepod-0.15.0.tar.gz"
+  sha256 "244e0bb107466d9c46ade35126001921bc4abd64e007d87045f150098a80cd97"
   license "MIT"
 
   depends_on "python@3.12"
