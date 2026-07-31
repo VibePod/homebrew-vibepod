@@ -8,6 +8,7 @@ class Vibepod < Formula
   license "MIT"
 
   depends_on "certifi" => :no_linkage
+  depends_on "libyaml"
   depends_on "python@3.12"
 
   pypi_packages exclude_packages: "certifi"
