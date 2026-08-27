@@ -1,0 +1,52 @@
+name: Test formula
+
+on:
+  push:
+    paths:
+      - "Formula/**"
+      - ".github/workflows/test-formula.yml"
+  pull_request:
+    paths:
+      - "Formula/**"
+      - ".github/workflows/test-formula.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-formula:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Expose this checkout as the tap
+        # brew audit/test only accept a formula name, never a path, so the
+        # checkout has to be reachable as a tap for the formula to be named.
+        run: |
+          TAP_DIR="$(brew --repository)/Library/Taps/vibepod/homebrew-vibepod"
+          mkdir -p "$(dirname "$TAP_DIR")"
+          rm -rf "$TAP_DIR"
+          ln -s "$GITHUB_WORKSPACE" "$TAP_DIR"
+          brew tap-info vibepod/vibepod
+
+      - name: Install from source
+        run: brew install --build-from-source vibepod/vibepod/vibepod
+
+      - name: Run formula test
+        # The venv is built with --no-deps, so a resource missing from the
+        # formula installs cleanly and only fails when `vp` actually imports it.
+        run: brew test vibepod/vibepod/vibepod
+
+      - name: Audit formula
+        # Last, and without --strict: --strict enforces homebrew-core policy
+        # that third-party taps routinely and legitimately violate, and it must
+        # not be able to skip the install/test steps above.
+        run: brew audit --online vibepod/vibepod/vibepod
