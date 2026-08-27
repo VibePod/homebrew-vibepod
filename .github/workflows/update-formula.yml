@@ -52,18 +52,24 @@ jobs:
         if: steps.pypi.outputs.latest != steps.pypi.outputs.current
         uses: Homebrew/actions/setup-homebrew@master
 
+      - name: Expose this checkout as the tap
+        if: steps.pypi.outputs.latest != steps.pypi.outputs.current
+        # brew commands only accept a formula name, never a path. Symlinking
+        # rather than copying means update-python-resources writes its result
+        # straight back into the checkout, ready to be committed.
+        run: |
+          TAP_DIR="$(brew --repository)/Library/Taps/vibepod/homebrew-vibepod"
+          mkdir -p "$(dirname "$TAP_DIR")"
+          rm -rf "$TAP_DIR"
+          ln -s "$GITHUB_WORKSPACE" "$TAP_DIR"
+          brew tap-info vibepod/vibepod
+
       - name: Refresh dependency resources
         if: steps.pypi.outputs.latest != steps.pypi.outputs.current
         run: |
-          # update-python-resources only operates on a formula inside a tap, so
-          # stage this checkout's formula into the real tap and copy the result
-          # back. Without this the resource list silently drifts whenever the
-          # release adds a dependency, producing an installable-but-broken venv.
-          brew tap VibePod/vibepod
-          TAP_FORMULA="$(brew --repo VibePod/vibepod)/Formula/vibepod.rb"
-          cp Formula/vibepod.rb "$TAP_FORMULA"
-          brew update-python-resources "$TAP_FORMULA"
-          cp "$TAP_FORMULA" Formula/vibepod.rb
+          # Without this the resource list silently drifts whenever a release
+          # adds a dependency, producing an installable-but-broken venv.
+          brew update-python-resources vibepod/vibepod/vibepod
           git --no-pager diff --stat Formula/vibepod.rb
 
       - name: Verify the formula installs and runs
@@ -71,8 +77,8 @@ jobs:
         run: |
           # Catches a missing resource: the venv builds with --no-deps, so an
           # absent dependency only surfaces when the test block runs `vp`.
-          brew install --build-from-source --formula ./Formula/vibepod.rb
-          brew test --formula ./Formula/vibepod.rb
+          brew install --build-from-source vibepod/vibepod/vibepod
+          brew test vibepod/vibepod/vibepod
 
       - name: Open PR with update
         if: steps.pypi.outputs.latest != steps.pypi.outputs.current
