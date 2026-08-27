@@ -48,6 +48,32 @@ jobs:
 
           echo "Updated to $NEW_VERSION (sha256: $SHA256)"
 
+      - name: Set up Homebrew
+        if: steps.pypi.outputs.latest != steps.pypi.outputs.current
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Refresh dependency resources
+        if: steps.pypi.outputs.latest != steps.pypi.outputs.current
+        run: |
+          # update-python-resources only operates on a formula inside a tap, so
+          # stage this checkout's formula into the real tap and copy the result
+          # back. Without this the resource list silently drifts whenever the
+          # release adds a dependency, producing an installable-but-broken venv.
+          brew tap VibePod/vibepod
+          TAP_FORMULA="$(brew --repo VibePod/vibepod)/Formula/vibepod.rb"
+          cp Formula/vibepod.rb "$TAP_FORMULA"
+          brew update-python-resources "$TAP_FORMULA"
+          cp "$TAP_FORMULA" Formula/vibepod.rb
+          git --no-pager diff --stat Formula/vibepod.rb
+
+      - name: Verify the formula installs and runs
+        if: steps.pypi.outputs.latest != steps.pypi.outputs.current
+        run: |
+          # Catches a missing resource: the venv builds with --no-deps, so an
+          # absent dependency only surfaces when the test block runs `vp`.
+          brew install --build-from-source --formula ./Formula/vibepod.rb
+          brew test --formula ./Formula/vibepod.rb
+
       - name: Open PR with update
         if: steps.pypi.outputs.latest != steps.pypi.outputs.current
         uses: peter-evans/create-pull-request@v8
@@ -60,9 +86,7 @@ jobs:
             - **Version:** `${{ steps.pypi.outputs.current }}` → `${{ steps.pypi.outputs.latest }}`
             - **PyPI:** https://pypi.org/project/vibepod/${{ steps.pypi.outputs.latest }}/
 
-            After merging, run locally to refresh dependency resources:
-            ```
-            brew update-python-resources Formula/vibepod.rb
-            ```
+            Dependency resources were refreshed with `brew update-python-resources`,
+            then `brew install --build-from-source` + `brew test` ran against the result.
           branch: "auto-update/vibepod-${{ steps.pypi.outputs.latest }}"
           delete-branch: true

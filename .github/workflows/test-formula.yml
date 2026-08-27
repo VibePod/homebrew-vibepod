@@ -1,0 +1,39 @@
+name: Test formula
+
+on:
+  push:
+    paths:
+      - "Formula/**"
+      - ".github/workflows/test-formula.yml"
+  pull_request:
+    paths:
+      - "Formula/**"
+      - ".github/workflows/test-formula.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-formula:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Audit formula
+        run: brew audit --strict --online --formula ./Formula/vibepod.rb
+
+      - name: Install from source
+        run: brew install --build-from-source --formula ./Formula/vibepod.rb
+
+      - name: Run formula test
+        # The venv is built with --no-deps, so a resource missing from the
+        # formula installs cleanly and only fails when `vp` actually imports it.
+        run: brew test --formula ./Formula/vibepod.rb
