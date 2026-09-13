@@ -23,7 +23,7 @@ jobs:
           python-version: "3.12"
 
       - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@main
 
       - name: Run pre-commit
         uses: pre-commit/action@v3.0.1

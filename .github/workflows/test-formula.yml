@@ -25,7 +25,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@main
 
       - name: Expose this checkout as the tap
         # brew audit/test only accept a formula name, never a path, so the
