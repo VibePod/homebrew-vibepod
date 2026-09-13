@@ -50,7 +50,7 @@ jobs:
 
       - name: Set up Homebrew
         if: steps.pypi.outputs.latest != steps.pypi.outputs.current
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@main
 
       - name: Expose this checkout as the tap
         if: steps.pypi.outputs.latest != steps.pypi.outputs.current
