@@ -3,8 +3,8 @@ class Vibepod < Formula
 
   desc "Run and switch AI coding agents locally"
   homepage "https://vibepod.dev"
-  url "https://files.pythonhosted.org/packages/c3/67/7c0189913018c7bb61e159ae22899ae0eb7628e870cb9d7fe93f888c13dd/vibepod-0.21.0.tar.gz"
-  sha256 "228c68f0797fc1665ffc65d2811de2d65e45e8a2b46911b0e291fec511600935"
+  url "https://files.pythonhosted.org/packages/8e/4b/37c7c906ae1f248df5ea26d045d1474b0f853d2cabf5d5b6e81d757f2577/vibepod-0.24.0.tar.gz"
+  sha256 "11d785a4219507a0d582b846b4e072db4168c80b9fc6c9100e252eab2122ff14"
   license "MIT"
 
   depends_on "certifi" => :no_linkage
@@ -49,8 +49,8 @@ class Vibepod < Formula
   end
 
   resource "platformdirs" do
-    url "https://files.pythonhosted.org/packages/ea/dd/65804b0c2925a1c821a05502ea57517b69a073ff400d25ab9faa3a2cf012/platformdirs-4.11.12.tar.gz"
-    sha256 "e8dc1cb58f1153fd7f61db1374317770baababec2480b37b8f01c6cc25b45267"
+    url "https://files.pythonhosted.org/packages/5f/e0/7c20b5d0e0f147c40a934e8f9e9f717bd6e3e372c4d58ca5c2fcce2b1652/platformdirs-4.11.15.tar.gz"
+    sha256 "d7419e973b2b740d428200130f80c0e79304d1c71081001db911e15b26a3a6d4"
   end
 
   resource "pygments" do
