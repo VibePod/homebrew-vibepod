@@ -27,6 +27,12 @@ jobs:
           echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
           echo "Latest: $LATEST | Current: $CURRENT"
 
+      - name: Set up Homebrew
+        if: steps.pypi.outputs.latest != steps.pypi.outputs.current
+        # Must run before the formula is edited: in a tap repository this action
+        # wipes the workspace and force-checks-out $GITHUB_SHA, discarding edits.
+        uses: Homebrew/actions/setup-homebrew@main
+
       - name: Update formula if version changed
         if: steps.pypi.outputs.latest != steps.pypi.outputs.current
         env:
@@ -46,11 +52,12 @@ jobs:
             { print }
           ' Formula/vibepod.rb > /tmp/vibepod_formula.rb && mv /tmp/vibepod_formula.rb Formula/vibepod.rb
 
+          UPDATED=$(grep -oP 'vibepod-\K[0-9.]+(?=\.tar\.gz)' Formula/vibepod.rb | head -1)
+          if [ "$UPDATED" != "$NEW_VERSION" ]; then
+            echo "::error::Formula still points at $UPDATED, expected $NEW_VERSION"
+            exit 1
+          fi
           echo "Updated to $NEW_VERSION (sha256: $SHA256)"
-
-      - name: Set up Homebrew
-        if: steps.pypi.outputs.latest != steps.pypi.outputs.current
-        uses: Homebrew/actions/setup-homebrew@main
 
       - name: Expose this checkout as the tap
         if: steps.pypi.outputs.latest != steps.pypi.outputs.current
@@ -66,11 +73,17 @@ jobs:
 
       - name: Refresh dependency resources
         if: steps.pypi.outputs.latest != steps.pypi.outputs.current
+        env:
+          NEW_VERSION: ${{ steps.pypi.outputs.latest }}
         run: |
           # Without this the resource list silently drifts whenever a release
           # adds a dependency, producing an installable-but-broken venv.
           brew update-python-resources vibepod/vibepod/vibepod
           git --no-pager diff --stat Formula/vibepod.rb
+          grep -q "vibepod-${NEW_VERSION}.tar.gz" Formula/vibepod.rb || {
+            echo "::error::Formula lost the ${NEW_VERSION} url before the resource refresh"
+            exit 1
+          }
 
       - name: Verify the formula installs and runs
         if: steps.pypi.outputs.latest != steps.pypi.outputs.current
