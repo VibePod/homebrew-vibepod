@@ -78,7 +78,10 @@ jobs:
         run: |
           # Without this the resource list silently drifts whenever a release
           # adds a dependency, producing an installable-but-broken venv.
-          brew update-python-resources vibepod/vibepod/vibepod
+          # Homebrew hides PyPI releases younger than a day, which would fail
+          # every run for the first 24 hours after a vibepod release. The flag
+          # exempts vibepod itself; its dependencies stay under the cooldown.
+          brew update-python-resources --ignore-main-package-cooldown vibepod/vibepod/vibepod
           git --no-pager diff --stat Formula/vibepod.rb
           grep -q "vibepod-${NEW_VERSION}.tar.gz" Formula/vibepod.rb || {
             echo "::error::Formula lost the ${NEW_VERSION} url before the resource refresh"
