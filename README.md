@@ -97,7 +97,7 @@ The included GitHub Actions workflow (`.github/workflows/update-formula.yml`) ch
 
 - macOS (Intel or Apple Silicon)
 - [Homebrew](https://brew.sh)
-- Python 3.12 (installed automatically by Homebrew if not present)
+- Python 3.15 (installed automatically by Homebrew if not present)
 - Docker (required by VibePod at runtime — install from [docker.com](https://www.docker.com))
 
 ## License
